@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static redis.clients.jedis.Protocol.toByteArray;
+import static redis.clients.jedis.Protocol.Command.HSCAN;
 
 public class Client extends BinaryClient implements Commands {
     public Client(final String host) {
@@ -754,11 +755,6 @@ public class Client extends BinaryClient implements Commands {
 	sentinel(arg);
     }
 
-    public void sentinel(final String cmd, String arg1, int arg2) {
-	sentinel(SafeEncoder.encode(cmd), SafeEncoder.encode(arg1),
-		toByteArray(arg2));
-    }
-    
     public void dump(final String key) { 
     	dump(SafeEncoder.encode(key));
     }
@@ -813,5 +809,17 @@ public class Client extends BinaryClient implements Commands {
     
     public void hincrByFloat(final String key, final String field, double increment) {
     	hincrByFloat(SafeEncoder.encode(key), SafeEncoder.encode(field), increment);
+    }
+    
+    public void hscan(final String key, int cursor, final ScanParams params) {
+ 	hscan(SafeEncoder.encode(key), cursor, params);
+    }
+    
+    public void sscan(final String key, int cursor, final ScanParams params) {
+ 	sscan(SafeEncoder.encode(key), cursor, params);
+    }
+    
+    public void zscan(final String key, int cursor, final ScanParams params) {
+ 	zscan(SafeEncoder.encode(key), cursor, params);
     }
 }

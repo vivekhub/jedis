@@ -29,7 +29,6 @@ public final class Protocol {
     public static final String SENTINEL_GET_MASTER_ADDR_BY_NAME = "get-master-addr-by-name";
     public static final String SENTINEL_RESET = "reset";
     public static final String SENTINEL_SLAVES = "slaves";
-    public static final String SENTINEL_IS_MASTER_DOWN_BY_ADDR = "is-master-down-by-addr";
 
     private Protocol() {
 	// this prevent the class from instantiation
@@ -101,7 +100,10 @@ public final class Protocol {
 	int offset = 0;
 	try {
 	    while (offset < len) {
-		offset += is.read(read, offset, (len - offset));
+	    	int size = is.read(read, offset, (len - offset));
+	    	if (size == -1)
+	    		throw new JedisConnectionException("It seems like server has closed the connection.");
+	    	offset += size;
 	    }
 	    // read 2 more bytes for the command delimiter
 	    is.readByte();
@@ -156,7 +158,7 @@ public final class Protocol {
 
     public static enum Command {
 	PING, SET, GET, QUIT, EXISTS, DEL, TYPE, FLUSHDB, KEYS, RANDOMKEY, RENAME, RENAMENX, RENAMEX, DBSIZE, EXPIRE, EXPIREAT, TTL, SELECT, MOVE, FLUSHALL, GETSET, MGET, SETNX, SETEX, MSET, MSETNX, DECRBY, DECR, INCRBY, INCR, APPEND, SUBSTR, HSET, HGET, HSETNX, HMSET, HMGET, HINCRBY, HEXISTS, HDEL, HLEN, HKEYS, HVALS, HGETALL, RPUSH, LPUSH, LLEN, LRANGE, LTRIM, LINDEX, LSET, LREM, LPOP, RPOP, RPOPLPUSH, SADD, SMEMBERS, SREM, SPOP, SMOVE, SCARD, SISMEMBER, SINTER, SINTERSTORE, SUNION, SUNIONSTORE, SDIFF, SDIFFSTORE, SRANDMEMBER, ZADD, ZRANGE, ZREM, ZINCRBY, ZRANK, ZREVRANK, ZREVRANGE, ZCARD, ZSCORE, MULTI, DISCARD, EXEC, WATCH, UNWATCH, SORT, BLPOP, BRPOP, AUTH, SUBSCRIBE, PUBLISH, UNSUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, ZCOUNT, ZRANGEBYSCORE, ZREVRANGEBYSCORE, ZREMRANGEBYRANK, ZREMRANGEBYSCORE, ZUNIONSTORE, ZINTERSTORE, SAVE, BGSAVE, BGREWRITEAOF, LASTSAVE, SHUTDOWN, INFO, MONITOR, SLAVEOF, CONFIG, STRLEN, SYNC, LPUSHX, PERSIST, RPUSHX, ECHO, LINSERT, DEBUG, BRPOPLPUSH, SETBIT, GETBIT, SETRANGE, GETRANGE, EVAL, EVALSHA, SCRIPT, SLOWLOG, OBJECT, BITCOUNT, BITOP, SENTINEL, 
-	DUMP, RESTORE, PEXPIRE, PEXPIREAT, PTTL, INCRBYFLOAT, PSETEX, CLIENT, TIME, MIGRATE, HINCRBYFLOAT;
+	DUMP, RESTORE, PEXPIRE, PEXPIREAT, PTTL, INCRBYFLOAT, PSETEX, CLIENT, TIME, MIGRATE, HINCRBYFLOAT, SCAN, HSCAN, SSCAN, ZSCAN, WAIT;
 
 	public final byte[] raw;
 
@@ -167,7 +169,7 @@ public final class Protocol {
 
     public static enum Keyword {
 	AGGREGATE, ALPHA, ASC, BY, DESC, GET, LIMIT, MESSAGE, NO, NOSORT, PMESSAGE, PSUBSCRIBE, PUNSUBSCRIBE, OK, ONE, QUEUED, SET, STORE, SUBSCRIBE, UNSUBSCRIBE, WEIGHTS, WITHSCORES, RESETSTAT, RESET, FLUSH, EXISTS, LOAD, KILL, LEN, REFCOUNT, ENCODING, IDLETIME, AND, OR, XOR, NOT,
-	GETNAME, SETNAME,LIST;
+	GETNAME, SETNAME,LIST, MATCH, COUNT;
 	public final byte[] raw;
 
 	Keyword() {

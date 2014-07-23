@@ -1,13 +1,20 @@
 package redis.clients.jedis;
 
+import java.net.URI;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import redis.clients.jedis.BinaryClient.LIST_POSITION;
 import redis.clients.util.SafeEncoder;
 import redis.clients.util.Slowlog;
 
-import java.net.URI;
-import java.util.*;
-
-public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommands, AdvancedJedisCommands, ScriptingCommands {
+public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommands, AdvancedJedisCommands, ScriptingCommands, BasicCommands {
     public Jedis(final String host) {
 	super(host);
     }
@@ -2997,27 +3004,6 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
 	return slaves;
     }
 
-    /**
-     * <pre>
-     * redis 127.0.0.1:26381> SENTINEL is-master-down-by-addr 127.0.0.1 1
-     * 1) (integer) 0
-     * 2) "?"
-     * redis 127.0.0.1:26381> SENTINEL is-master-down-by-addr 127.0.0.1 6379
-     * 1) (integer) 0
-     * 2) "aaef11fbb2712346a386078c7f9834e72ed51e96"
-     * </pre>
-     * 
-     * @return Long followed by the String (runid)
-     */
-    @SuppressWarnings("unchecked")
-	public List<? extends Object> sentinelIsMasterDownByAddr(String host,
-	    int port) {
-	client.sentinel(Protocol.SENTINEL_IS_MASTER_DOWN_BY_ADDR, host, port);
-	final List<Object> reply = client.getObjectMultiBulkReply();
-	return Arrays.asList(BuilderFactory.LONG.build(reply.get(0)),
-		BuilderFactory.STRING.build(reply.get(1)));
-    }
-    
     public byte[] dump(final String key) {
 	    checkIsInMulti();
 	    client.dump(key);
@@ -3096,5 +3082,75 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
     	client.hincrByFloat(key, field, increment);
     	String relpy = client.getBulkReply();
     	return (relpy != null ? new Double(relpy) : null);
+    }
+
+    public ScanResult<String> scan(int cursor) {
+	return scan(cursor, new ScanParams());
+    }
+    
+    public ScanResult<String> scan(int cursor, final ScanParams params) {
+	checkIsInMulti();
+	client.scan(cursor, params);
+	List<Object> result = client.getObjectMultiBulkReply();
+	int newcursor = Integer.parseInt(new String((byte[])result.get(0)));
+	List<String> results = new ArrayList<String>();
+	List<byte[]> rawResults = (List<byte[]>)result.get(1);
+	for (byte[] bs : rawResults) {
+	    results.add(SafeEncoder.encode(bs));
+	}
+	return new ScanResult<String>(newcursor, results);
+    }
+    
+    public ScanResult<Map.Entry<String, String>> hscan(final String key, int cursor) {
+	return hscan(key, cursor, new ScanParams());
+    }
+    
+    public ScanResult<Map.Entry<String, String>> hscan(final String key, int cursor, final ScanParams params) {
+	checkIsInMulti();
+	client.hscan(key, cursor, params);
+	List<Object> result = client.getObjectMultiBulkReply();
+	int newcursor = Integer.parseInt(new String((byte[])result.get(0)));
+	List<Map.Entry<String, String>> results = new ArrayList<Map.Entry<String, String>>();
+	List<byte[]> rawResults = (List<byte[]>)result.get(1);
+	Iterator<byte[]> iterator = rawResults.iterator();
+	while(iterator.hasNext()) {
+	    results.add(new AbstractMap.SimpleEntry<String, String>(SafeEncoder.encode(iterator.next()), SafeEncoder.encode(iterator.next())));
+	}
+	return new ScanResult<Map.Entry<String, String>>(newcursor, results);
+    }
+    
+    public ScanResult<String> sscan(final String key, int cursor) {
+	return sscan(key, cursor, new ScanParams());
+    }
+    
+    public ScanResult<String> sscan(final String key, int cursor, final ScanParams params) {
+	checkIsInMulti();
+	client.sscan(key, cursor, params);
+	List<Object> result = client.getObjectMultiBulkReply();
+	int newcursor = Integer.parseInt(new String((byte[])result.get(0)));
+	List<String> results = new ArrayList<String>();
+	List<byte[]> rawResults = (List<byte[]>)result.get(1);
+	for (byte[] bs : rawResults) {
+	    results.add(SafeEncoder.encode(bs));
+	}
+	return new ScanResult<String>(newcursor, results);
+    }
+    
+    public ScanResult<Tuple> zscan(final String key, int cursor) {
+	return zscan(key, cursor, new ScanParams());
+    }
+    
+    public ScanResult<Tuple> zscan(final String key, int cursor, final ScanParams params) {
+	checkIsInMulti();
+	client.zscan(key, cursor, params);
+	List<Object> result = client.getObjectMultiBulkReply();
+	int newcursor = Integer.parseInt(new String((byte[])result.get(0)));
+	List<Tuple> results = new ArrayList<Tuple>();
+	List<byte[]> rawResults = (List<byte[]>)result.get(1);
+	Iterator<byte[]> iterator = rawResults.iterator();
+	while(iterator.hasNext()) {
+	    results.add(new Tuple(SafeEncoder.encode(iterator.next()), Double.valueOf(SafeEncoder.encode(iterator.next()))));
+	}
+	return new ScanResult<Tuple>(newcursor, results);
     }
 }
